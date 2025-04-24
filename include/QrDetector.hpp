@@ -100,7 +100,7 @@ inline bool findLargestTriple(
     return false;
   }
   std::vector<cv::Point> ans;
-  std::vector<double> epsilons = {0.05, 0.1, 0.2, 0.3};
+  std::vector<double> epsilons = {0.1, 0.2, 0.3};
   for (auto eps: epsilons) {
     for (size_t i = 0; i < squares.size(); i++) {
       for (size_t j = 0; j < squares.size(); j++) {
@@ -115,14 +115,14 @@ inline bool findLargestTriple(
 
           auto maxSquare = std::max(std::max(cv::contourArea(squares[i]), cv::contourArea(squares[j])), cv::contourArea(squares[k]));
           auto minSquare = std::min(std::min(cv::contourArea(squares[i]), cv::contourArea(squares[j])), cv::contourArea(squares[k]));
-          if (maxSquare / minSquare > 1 + eps) continue;
+          if (sqrt(maxSquare / minSquare) > 1 + eps) continue;
 
           double xz = distance(x, z);
           double yz = distance(y, z);
           if (xz / yz > 1 + eps || yz / xz > 1 + eps) continue;
 
           std::vector<cv::Point> tmp = {x, z, y, x + (y - z)};
-          double sca = (distance(x, y) + sqrt(sqrt(maxSquare * minSquare)) * sqrt(2.5)) / distance(x, y);
+          double sca = (distance(x, y) + sqrt(sqrt(maxSquare * minSquare)) * 1.55) / distance(x, y);
           cv::Point centre = getCentre(tmp);
           std::vector<cv::Point> scaled;
           for (auto u : tmp) {
