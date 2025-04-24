@@ -4,7 +4,7 @@
 QrDetector::QrDetector(cv::Mat img) { this->img = img; };
 
 std::vector<cv::Point> QrDetector::Detection() {
-  for (int base : {3, 5, 7, 10, 20}) {
+  for (int base : {5, 7, 10, 20}) {
     cv::Mat dst;
     preProcess(dst, base);
     
