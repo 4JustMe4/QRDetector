@@ -54,7 +54,7 @@ void QrDetector::preProcess(cv::Mat& dst, int base) {
   cv::Mat canny;
   cv::Mat kernel =
       cv::getStructuringElement(cv::MORPH_RECT, cv::Size(base, base));  // 5 5
-  cv::Canny(temp, canny, 200, 240, 3, false);                       // 60 200
+  cv::Canny(temp, canny, 200, 240);                       // 60 200
   cv::imwrite("Canny" + std::to_string(base) + ".jpg", canny);
   cv::morphologyEx(canny, dst, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 2);
   cv::imwrite("Morphology" + std::to_string(base) + ".jpg", dst);
