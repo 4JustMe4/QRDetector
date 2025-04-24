@@ -30,6 +30,15 @@ inline bool compareContourAreas(std::vector<cv::Point> contour1,
   return (i > j);
 }
 
+inline cv::Point getCentre(const std::vector<cv::Point>& square) {
+  cv::Point ans;
+  for (const auto& p: square) {
+    ans += p;
+  }
+  ans /= int(square.size());
+  return ans;
+}
+
 inline double angle(cv::Point pt1, cv::Point pt2, cv::Point pt0) {
   double dx1 = pt1.x - pt0.x;
   double dy1 = pt1.y - pt0.y;
@@ -39,8 +48,14 @@ inline double angle(cv::Point pt1, cv::Point pt2, cv::Point pt0) {
          sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2) + 1e-10);
 }
 
+
+inline double distance(cv::Point p1, cv::Point p2) {
+  return std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+}
+
 inline void findSquares(const cv::Mat& src,
-                        std::vector<std::vector<cv::Point>>& squares) {
+                        std::vector<std::vector<cv::Point>>& squares,
+                        bool isSmall = false) {
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(src, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 
@@ -64,18 +79,70 @@ inline void findSquares(const cv::Mat& src,
       if (std::fabs(side1 - side2) < epsilon * std::max(side1, side2) &&
           std::fabs(side2 - side3) < epsilon * std::max(side2, side3) &&
           std::fabs(side3 - side4) < epsilon * std::max(side3, side4)) {
-        squares.push_back(approx);
-        // double maxCosine = 0;
-        // for (int j = 2; j < 5; j++) {
-        //   double cosine =
-        //       std::fabs(angle(approx[j % 4], approx[j - 2], approx[j - 1]));
-        //   maxCosine = std::max(maxCosine, cosine);
-        // }
+        double maxCosine = 0;
+        for (int j = 2; j < 5; j++) {
+          double cosine =
+              std::fabs(angle(approx[j % 4], approx[j - 2], approx[j - 1]));
+          maxCosine = std::max(maxCosine, cosine);
+        }
 
-        // if (maxCosine < 0.3) squares.push_back(approx);
+        if (maxCosine < 0.1 || !isSmall) squares.push_back(approx);
       }
     }
   }
+}
+
+inline bool findLargestTriple(
+    const std::vector<std::vector<cv::Point>>& squares,
+    std::vector<cv::Point>& biggest_square) {
+  if (!squares.size()) {
+    std::cout << "No squares detect" << std::endl;
+    return false;
+  }
+  std::vector<cv::Point> ans;
+  std::vector<double> epsilons = {0.05, 0.1, 0.2, 0.3};
+  for (auto eps: epsilons) {
+    for (size_t i = 0; i < squares.size(); i++) {
+      for (size_t j = 0; j < squares.size(); j++) {
+        if (i == j) continue;
+        for (size_t k = 0; k < squares.size(); k++) {
+          if (i == k || j == k) continue;
+
+          cv::Point x = getCentre(squares[i]);
+          cv::Point y = getCentre(squares[j]);
+          cv::Point z = getCentre(squares[k]);
+          if (std::fabs(angle(x, y, z)) > eps) continue;
+
+          auto maxSquare = std::max(std::max(cv::contourArea(squares[i]), cv::contourArea(squares[j])), cv::contourArea(squares[k]));
+          auto minSquare = std::min(std::min(cv::contourArea(squares[i]), cv::contourArea(squares[j])), cv::contourArea(squares[k]));
+          if (maxSquare / minSquare > 1 + eps) continue;
+
+          double xz = distance(x, z);
+          double yz = distance(y, z);
+          if (xz / yz > 1 + eps || yz / xz > 1 + eps) continue;
+
+          std::vector<cv::Point> tmp = {x, z, y, x + (y - z)};
+          double sca = (distance(x, y) + sqrt(sqrt(maxSquare * minSquare)) * sqrt(2.5)) / distance(x, y);
+          cv::Point centre = getCentre(tmp);
+          std::vector<cv::Point> scaled;
+          for (auto u : tmp) {
+            scaled.push_back(centre + (u - centre) * sca);
+          }
+          if (ans.empty() || cv::contourArea(ans) < cv::contourArea(scaled)) {
+            ans = scaled;
+          }
+        }
+      }
+    }
+    if (ans.size()) {
+      break;
+    }
+  }
+  if (ans.size()) {
+    biggest_square = ans;
+    return true;
+  }
+  return false;
 }
 
 inline bool findLargestSquare(
@@ -85,6 +152,7 @@ inline bool findLargestSquare(
     std::cout << "No squares detect" << std::endl;
     return false;
   }
+
 
   int max_width = 0;
   int max_height = 0;
@@ -106,8 +174,4 @@ inline bool findLargestSquare(
 
   biggest_square = squares[max_square_idx];
   return true;
-}
-
-inline double distance(cv::Point p1, cv::Point p2) {
-  return std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
 }

@@ -4,19 +4,33 @@
 QrDetector::QrDetector(cv::Mat img) { this->img = img; };
 
 std::vector<cv::Point> QrDetector::Detection() {
-  for (int base : {5, 7, 10, 20}) {
+  {
     cv::Mat dst;
-    preProcess(dst, base);
-    
+    preProcess(dst, 1);
     std::vector<std::vector<cv::Point>> contours;
-    findSquares(dst, contours);
-    std::cout << "Количество контуров: " << contours.size() << std::endl;
+    findSquares(dst, contours, true);
+    std::cout << "Количество контуров для маленьких квадратов: " << contours.size() << std::endl;
     cv::Mat drawing = img.clone();
     for (size_t i = 0; i < contours.size(); i++) {
       cv::polylines(drawing, contours, i, cv::Scalar(0, 255, 0), 10);
     }
-    cv::imwrite("Contours" + std::to_string(base) + ".jpg", drawing);
-
+    cv::imwrite("ContoursSmall" + std::to_string(1) + ".jpg", drawing);
+    std::vector<cv::Point> detect_points;
+    if (findLargestTriple(contours, detect_points)) {
+      return detect_points;
+    }
+  }
+   for (int base : {5, 7, 10, 20}) {
+    cv::Mat dst;
+    preProcess(dst, base);
+    std::vector<std::vector<cv::Point>> contours;
+    findSquares(dst, contours);
+    std::cout << "Количество контуров больших квадратов: " << contours.size() << std::endl;
+    cv::Mat drawing = img.clone();
+    for (size_t i = 0; i < contours.size(); i++) {
+      cv::polylines(drawing, contours, i, cv::Scalar(0, 255, 0), 10);
+    }
+    cv::imwrite("ContoursBig" + std::to_string(base) + ".jpg", drawing);
     std::vector<cv::Point> detect_points;
     if (findLargestSquare(contours, detect_points)) {
       return detect_points;
