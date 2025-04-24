@@ -4,27 +4,31 @@
 QrDetector::QrDetector(cv::Mat img) { this->img = img; };
 
 std::vector<cv::Point> QrDetector::Detection() {
-  cv::Mat dst;
-  preProcess(dst);
-  
-  std::vector<std::vector<cv::Point>> contours;
-  findSquares(dst, contours);
-  std::cout << "Количество контуров: " << contours.size() << std::endl;
-  cv::Mat drawing = img.clone();
-  for (size_t i = 0; i < contours.size(); i++) {
-    cv::polylines(drawing, contours, i, cv::Scalar(0, 255, 0), 10);
-  }
-  cv::imwrite("Contours.jpg", drawing);
+  for (int base : {3, 5, 7, 10, 20}) {
+    cv::Mat dst;
+    preProcess(dst, base);
+    
+    std::vector<std::vector<cv::Point>> contours;
+    findSquares(dst, contours);
+    std::cout << "Количество контуров: " << contours.size() << std::endl;
+    cv::Mat drawing = img.clone();
+    for (size_t i = 0; i < contours.size(); i++) {
+      cv::polylines(drawing, contours, i, cv::Scalar(0, 255, 0), 10);
+    }
+    cv::imwrite("Contours" + std::to_string(base) + ".jpg", drawing);
 
-  std::vector<cv::Point> detect_points;
-  findLargestSquare(contours, detect_points);
-  return detect_points;
+    std::vector<cv::Point> detect_points;
+    if (findLargestSquare(contours, detect_points)) {
+      return detect_points;
+    }
+  }
+  return std::vector<cv::Point>();
 };
 
-void QrDetector::preProcess(cv::Mat& dst) {
+void QrDetector::preProcess(cv::Mat& dst, int base) {
   cv::Mat temp = img.clone();
   cv::cvtColor(temp, temp, cv::ColorConversionCodes::COLOR_BGR2GRAY);
-  cv::imwrite("Gray.jpg", temp);
+  cv::imwrite("Gray" + std::to_string(base) + ".jpg", temp);
   // GaussianBlur(temp, temp, cv::Size(3, 3), 0);  // 5 5
   // cv::imwrite("Blur.jpg", temp);
   // cv::Mat adaptive;
@@ -35,20 +39,25 @@ void QrDetector::preProcess(cv::Mat& dst) {
 
   cv::Mat canny;
   cv::Mat kernel =
-      cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));  // 5 5
+      cv::getStructuringElement(cv::MORPH_RECT, cv::Size(base, base));  // 5 5
   cv::Canny(temp, canny, 200, 240, 3, false);                       // 60 200
-  cv::imwrite("Canny.jpg", canny);
+  cv::imwrite("Canny" + std::to_string(base) + ".jpg", canny);
   cv::morphologyEx(canny, dst, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 2);
-  cv::imwrite("Morphology.jpg", dst);
+  cv::imwrite("Morphology" + std::to_string(base) + ".jpg", dst);
 }
 
 void QrDetector::Benchmark(
     std::string folderImages,
     std::map<std::string, std::vector<cv::Point>> standard) {
+  std::vector<std::pair<std::string, std::vector<cv::Point>>> ordered(standard.begin(), standard.end());
+  std::sort(ordered.begin(), ordered.end(), 
+    [] (const std::pair<std::string, std::vector<cv::Point>>& a, const std::pair<std::string, std::vector<cv::Point>>& b) {
+      return a.first.size() != b.first.size() ? a.first.size() < b.first.size() : a.first < b.first;
+    });
   int count = 0;
   std::vector<std::string> correct;
   double qualityALL = 0;
-  for (auto i : standard) {
+  for (auto i : ordered) {
     std::string pathImg = folderImages + i.first;
     cv::Mat img = cv::imread(pathImg);
     QrDetector tmp = QrDetector(img);

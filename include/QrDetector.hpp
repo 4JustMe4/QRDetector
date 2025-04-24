@@ -13,7 +13,7 @@ class QrDetector {
 
  public:
   QrDetector(cv::Mat img);
-  void preProcess(cv::Mat& dst);
+  void preProcess(cv::Mat& dst, int base = 5);
   std::vector<cv::Point> Detection();
   static void Benchmark(std::string folderImages,
                         std::map<std::string, std::vector<cv::Point>> standard);
@@ -65,7 +65,7 @@ inline void findSquares(const cv::Mat& src,
           std::fabs(side2 - side3) < epsilon * std::max(side2, side3) &&
           std::fabs(side3 - side4) < epsilon * std::max(side3, side4)) {
         squares.push_back(approx);
-        double maxCosine = 0;
+        // double maxCosine = 0;
         // for (int j = 2; j < 5; j++) {
         //   double cosine =
         //       std::fabs(angle(approx[j % 4], approx[j - 2], approx[j - 1]));
@@ -78,12 +78,12 @@ inline void findSquares(const cv::Mat& src,
   }
 }
 
-inline void findLargestSquare(
+inline bool findLargestSquare(
     const std::vector<std::vector<cv::Point>>& squares,
     std::vector<cv::Point>& biggest_square) {
   if (!squares.size()) {
     std::cout << "No squares detect" << std::endl;
-    return;
+    return false;
   }
 
   int max_width = 0;
@@ -105,6 +105,7 @@ inline void findLargestSquare(
   }
 
   biggest_square = squares[max_square_idx];
+  return true;
 }
 
 inline double distance(cv::Point p1, cv::Point p2) {
