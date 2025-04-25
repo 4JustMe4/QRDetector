@@ -68,7 +68,7 @@ inline void findSquares(const cv::Mat& src,
 
     long long int size = src.rows * src.cols;
     if (approx.size() == 4 && cv::isContourConvex(cv::Mat(approx)) &&
-        cv::contourArea(approx) > 1000) {
+        cv::contourArea(approx) > 600) {
       double side1 = cv::norm(approx[0] - approx[1]);
       double side2 = cv::norm(approx[1] - approx[2]);
       double side3 = cv::norm(approx[2] - approx[3]);
