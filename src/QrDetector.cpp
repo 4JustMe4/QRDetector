@@ -12,7 +12,7 @@ std::vector<cv::Point> QrDetector::Detection() {
     std::cout << "Количество контуров для маленьких квадратов: " << contours.size() << std::endl;
     cv::Mat drawing = img.clone();
     for (size_t i = 0; i < contours.size(); i++) {
-      cv::polylines(drawing, contours, i, cv::Scalar(0, 255, 0), 10);
+      cv::polylines(drawing, contours, i, cv::Scalar(0, 255, 0), 2);
     }
     cv::imwrite("ContoursSmall" + std::to_string(1) + ".jpg", drawing);
     std::vector<cv::Point> detect_points;
@@ -28,7 +28,7 @@ std::vector<cv::Point> QrDetector::Detection() {
     std::cout << "Количество контуров больших квадратов: " << contours.size() << std::endl;
     cv::Mat drawing = img.clone();
     for (size_t i = 0; i < contours.size(); i++) {
-      cv::polylines(drawing, contours, i, cv::Scalar(0, 255, 0), 10);
+      cv::polylines(drawing, contours, i, cv::Scalar(0, 255, 0), 2);
     }
     cv::imwrite("ContoursBig" + std::to_string(base) + ".jpg", drawing);
     std::vector<cv::Point> detect_points;
